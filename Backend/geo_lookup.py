@@ -52,7 +52,7 @@ DEMO_GEO_FALLBACK = {
 }
 
 
-def _empty_location(ip_address, city="Unknown City", country="Unknown Country"):
+def empty_location(ip_address, city="GeoIP unavailable", country="Unknown"):
     return {
         "ip": ip_address,
         "city": city,
@@ -62,7 +62,7 @@ def _empty_location(ip_address, city="Unknown City", country="Unknown Country"):
     }
 
 
-def _get_reader():
+def get_reader():
     global _reader
 
     if _reader is not None:
@@ -85,7 +85,7 @@ def get_geoip_status():
     return "Demo fallback GeoIP locations active"
 
 
-def lookup_ip(ip_address):
+def get_geo_info(ip_address):
     ip_address = str(ip_address).strip()
 
     if ip_address in _cache:
@@ -106,19 +106,19 @@ def lookup_ip(ip_address):
             or ip_object.is_multicast
             or ip_object.is_link_local
         ):
-            result = _empty_location(ip_address, "Private/Reserved IP", "N/A")
+            result = empty_location(ip_address, "Private/Reserved IP", "N/A")
             _cache[ip_address] = result
             return result
     except ValueError:
-        result = _empty_location(ip_address, "Invalid IP", "N/A")
+        result = empty_location(ip_address, "Invalid IP", "N/A")
         _cache[ip_address] = result
         return result
 
     try:
-        reader = _get_reader()
+        reader = get_reader()
 
         if reader is None:
-            result = _empty_location(ip_address)
+            result = empty_location(ip_address)
             _cache[ip_address] = result
             return result
 
@@ -141,13 +141,17 @@ def lookup_ip(ip_address):
         return result
 
     except Exception:
-        result = _empty_location(ip_address)
+        result = empty_location(ip_address)
         _cache[ip_address] = result
         return result
 
 
+def lookup_ip(ip_address):
+    return get_geo_info(ip_address)
+
+
 def get_location(ip_address):
-    return lookup_ip(ip_address)
+    return get_geo_info(ip_address)
 
 
 def geoip_status():
