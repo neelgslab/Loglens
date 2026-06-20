@@ -12,6 +12,9 @@ import {
 } from "recharts";
 import "./App.css";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000";
+
 function App() {
   const [report, setReport] = useState(null);
   const [error, setError] = useState("");
@@ -117,7 +120,7 @@ function App() {
 
       uploadRequestRef.current = request;
 
-      request.open("POST", "http://127.0.0.1:5000/upload-async");
+      request.open("POST", `${API_BASE_URL}/upload-async`);
 
       request.upload.onprogress = function (event) {
         if (event.lengthComputable) {
@@ -159,7 +162,7 @@ function App() {
   async function checkJobUntilDone(currentJobId) {
     while (true) {
       const response = await fetch(
-        `http://127.0.0.1:5000/job-status/${currentJobId}`
+        `${API_BASE_URL}/job-status/${currentJobId}`
       );
 
       if (!response.ok) {
@@ -220,7 +223,7 @@ function App() {
       setJobStatus("cancelling");
       setJobMessage("Cancelling job");
 
-      const response = await fetch(`http://127.0.0.1:5000/cancel-job/${jobId}`, {
+      const response = await fetch(`${API_BASE_URL}/cancel-job/${jobId}`, {
         method: "POST",
       });
 
@@ -245,7 +248,7 @@ function App() {
       setJobMessage("Starting demo analysis");
       setEventFilter("attacked");
 
-      const response = await fetch("http://127.0.0.1:5000/start-sample-job", {
+      const response = await fetch(`${API_BASE_URL}/start-sample-job`, {
         method: "POST",
       });
 
@@ -263,7 +266,7 @@ function App() {
       await checkJobUntilDone(data.job_id);
     } catch (err) {
       console.error(err);
-      setError("Could not connect to the Flask backend. Make sure py app.py is running.");
+      setError("Could not connect to the Flask backend.");
       setLoading(false);
       setTopProgress(0);
     }
@@ -810,7 +813,8 @@ function App() {
           </div>
 
           <p className="eventFilterNote">
-            Showing {filteredEvents.length} {eventFilter === "normal" ? "normal" : "attacked"} events
+            Showing {filteredEvents.length}{" "}
+            {eventFilter === "normal" ? "normal" : "attacked"} events
           </p>
 
           <div className="tableWrap eventTableWrap">
