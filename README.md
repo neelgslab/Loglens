@@ -2,7 +2,7 @@
 
 GitHub Repository: https://github.com/neelgslab/Loglens
 
-Live Application: YOUR_VERCEL_LINK_HERE
+Live Application: https://loglens-two.vercel.app/
 
 Backend API: https://loglens-r91o.onrender.com
 
