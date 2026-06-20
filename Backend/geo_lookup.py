@@ -1,110 +1,158 @@
-from pathlib import Path
-from ipaddress import ip_address
-
+import ipaddress
+import os
 
 try:
     import geoip2.database
-    from geoip2.errors import AddressNotFoundError
 except ImportError:
     geoip2 = None
 
-    class AddressNotFoundError(Exception):
-        pass
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "GeoLite2-City.mmdb")
+
+_reader = None
+_cache = {}
+
+DEMO_GEO_FALLBACK = {
+    "185.220.101.1": {
+        "ip": "185.220.101.1",
+        "city": "Brandenburg an der Havel",
+        "country": "Germany",
+        "latitude": 52.6171,
+        "longitude": 13.1207,
+    },
+    "51.15.76.10": {
+        "ip": "51.15.76.10",
+        "city": "Haarlem",
+        "country": "The Netherlands",
+        "latitude": 52.3803,
+        "longitude": 4.6422,
+    },
+    "45.33.32.156": {
+        "ip": "45.33.32.156",
+        "city": "Fremont",
+        "country": "United States",
+        "latitude": 37.5483,
+        "longitude": -121.9886,
+    },
+    "103.48.198.141": {
+        "ip": "103.48.198.141",
+        "city": "New Delhi",
+        "country": "India",
+        "latitude": 28.6139,
+        "longitude": 77.209,
+    },
+    "45.79.118.42": {
+        "ip": "45.79.118.42",
+        "city": "Sydney",
+        "country": "Australia",
+        "latitude": -33.8688,
+        "longitude": 151.2093,
+    },
+}
 
 
-DATABASE_FILE = Path(__file__).with_name("GeoLite2-City.mmdb")
-
-reader = None
-geo_cache = {}
-
-
-def get_geoip_status():
-    if geoip2 is None:
-        return "geoip2 package missing"
-
-    if not DATABASE_FILE.exists():
-        return "GeoLite2-City.mmdb missing"
-
-    return "MaxMind GeoLite2 City database active"
-
-
-def get_reader():
-    global reader
-
-    if geoip2 is None:
-        return None
-
-    if not DATABASE_FILE.exists():
-        return None
-
-    if reader is None:
-        reader = geoip2.database.Reader(str(DATABASE_FILE))
-
-    return reader
-
-
-def is_public_ip(ip):
-    try:
-        parsed_ip = ip_address(ip)
-
-        if parsed_ip.is_private:
-            return False
-
-        if parsed_ip.is_loopback:
-            return False
-
-        if parsed_ip.is_reserved:
-            return False
-
-        if parsed_ip.is_multicast:
-            return False
-
-        return True
-
-    except ValueError:
-        return False
-
-
-def blank_location(reason):
+def _empty_location(ip_address, city="Unknown City", country="Unknown Country"):
     return {
-        "city": reason,
-        "country": "Unknown",
+        "ip": ip_address,
+        "city": city,
+        "country": country,
         "latitude": 0,
-        "longitude": 0
+        "longitude": 0,
     }
 
 
-def get_geo_info(ip):
-    if ip in geo_cache:
-        return geo_cache[ip]
+def _get_reader():
+    global _reader
 
-    if not is_public_ip(ip):
-        location = blank_location("Private/Reserved IP")
-        geo_cache[ip] = location
-        return location
+    if _reader is not None:
+        return _reader
 
-    database_reader = get_reader()
+    if geoip2 is None:
+        return None
 
-    if database_reader is None:
-        location = blank_location("GeoIP unavailable")
-        geo_cache[ip] = location
-        return location
+    if not os.path.exists(DB_PATH):
+        return None
+
+    _reader = geoip2.database.Reader(DB_PATH)
+    return _reader
+
+
+def get_geoip_status():
+    if geoip2 is not None and os.path.exists(DB_PATH):
+        return "MaxMind GeoLite2 City database active"
+
+    return "Demo fallback GeoIP locations active"
+
+
+def lookup_ip(ip_address):
+    ip_address = str(ip_address).strip()
+
+    if ip_address in _cache:
+        return _cache[ip_address]
+
+    if ip_address in DEMO_GEO_FALLBACK:
+        result = dict(DEMO_GEO_FALLBACK[ip_address])
+        _cache[ip_address] = result
+        return result
 
     try:
-        response = database_reader.city(ip)
+        ip_object = ipaddress.ip_address(ip_address)
 
-        location = {
-            "city": response.city.name or "Unknown City",
-            "country": response.country.name or "Unknown Country",
-            "latitude": response.location.latitude or 0,
-            "longitude": response.location.longitude or 0
+        if (
+            ip_object.is_private
+            or ip_object.is_loopback
+            or ip_object.is_reserved
+            or ip_object.is_multicast
+            or ip_object.is_link_local
+        ):
+            result = _empty_location(ip_address, "Private/Reserved IP", "N/A")
+            _cache[ip_address] = result
+            return result
+    except ValueError:
+        result = _empty_location(ip_address, "Invalid IP", "N/A")
+        _cache[ip_address] = result
+        return result
+
+    try:
+        reader = _get_reader()
+
+        if reader is None:
+            result = _empty_location(ip_address)
+            _cache[ip_address] = result
+            return result
+
+        response = reader.city(ip_address)
+
+        city = response.city.name or "Unknown City"
+        country = response.country.name or "Unknown Country"
+        latitude = response.location.latitude or 0
+        longitude = response.location.longitude or 0
+
+        result = {
+            "ip": ip_address,
+            "city": city,
+            "country": country,
+            "latitude": latitude,
+            "longitude": longitude,
         }
 
-        geo_cache[ip] = location
-        return location
+        _cache[ip_address] = result
+        return result
 
-    except AddressNotFoundError:
-        location = blank_location("Not Found")
-        geo_cache[ip] = location
-        return location
-    
+    except Exception:
+        result = _empty_location(ip_address)
+        _cache[ip_address] = result
+        return result
+
+
+def get_location(ip_address):
+    return lookup_ip(ip_address)
+
+
+def geoip_status():
+    return get_geoip_status()
+
+
+def is_geoip_available():
+    return geoip2 is not None and os.path.exists(DB_PATH)

@@ -1,204 +1,208 @@
+import os
 import random
 from datetime import datetime, timedelta
-from pathlib import Path
 
-
-OUTPUT_FILE = Path(__file__).with_name("sample.log")
-TOTAL_LINES = 600
 
 random.seed(42)
 
-normal_ips = [
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_FILE = os.path.join(BASE_DIR, "sample.log")
+
+NORMAL_IPS = [
+    "103.48.198.141",
+    "45.79.118.42",
     "8.8.8.8",
     "9.9.9.9",
-    "45.79.118.42",
-    "103.48.198.141",
-    "208.67.222.222",
-    "66.249.66.1"
+    "66.249.66.1",
 ]
 
-attack_ips = {
-    "sqli": "45.33.32.156",
-    "xss": "51.15.76.10",
-    "traversal": "185.220.101.1",
-    "bruteforce": "185.220.101.1"
-}
+ATTACK_IPS = [
+    "185.220.101.1",
+    "51.15.76.10",
+    "45.33.32.156",
+]
 
-normal_paths = [
+NORMAL_PATHS = [
     "/",
-    "/index.html",
-    "/about",
-    "/contact",
-    "/products.php?id=12",
-    "/products.php?id=18",
-    "/blog/nginx-basic-hardening",
-    "/assets/logo.png",
-    "/assets/main.css",
-    "/assets/app.js",
+    "/login",
+    "/products",
     "/api/products",
     "/api/cart",
-    "/login",
-    "/admin/login.php",
-    "/wp-admin/"
+    "/checkout",
+    "/contact",
+    "/about",
+    "/assets/app.js",
+    "/assets/main.css",
+    "/favicon.ico",
 ]
 
-sqli_paths = [
-    "/products.php?id=12%27%20OR%201%3D1--",
-    "/search.php?q=-1%20UNION%20SELECT%20username,password%20FROM%20users--",
-    "/news.php?id=3%20AND%201%3D1",
-    "/item.php?id=5%27%20OR%20%271%27%3D%271",
-    "/product.php?id=9%3BSELECT%20sleep(5)"
-]
-
-xss_paths = [
-    "/comment.php?msg=%3Cscript%3Ealert(document.cookie)%3C/script%3E",
-    "/profile.php?next=javascript:alert(1)",
-    "/contact.php?name=%22%3E%3Cimg%20src=x%20onerror=alert(1)%3E",
-    "/search.php?q=%3Cscript%3Ealert(1)%3C/script%3E"
-]
-
-traversal_paths = [
-    "/download.php?file=../../../../etc/passwd",
-    "/cgi-bin/%2e%2e/%2e%2e/%2e%2e/bin/sh",
-    "/static/%2e%2e/%2e%2e/%2e%2e/etc/passwd",
-    "/view?template=../../../../windows/win.ini"
-]
-
-user_agents = [
+USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15",
     "Mozilla/5.0 (X11; Linux x86_64) Firefox/125.0",
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) Mobile/15E148 Safari/604.1",
-    "curl/8.1.2",
-    "sqlmap/1.8.4#stable (https://sqlmap.org)"
 ]
 
-referrers = [
-    "-",
-    "https://example.com/",
-    "https://example.com/products",
-    "https://example.com/login",
-    "https://google.com/"
+ATTACK_USER_AGENTS = [
+    "sqlmap/1.8.4#stable",
+    "Mozilla/5.0 attack-scanner",
+    "python-requests/2.31",
+    "curl/8.4.0",
 ]
 
 
-def apache_time(timestamp):
-    return timestamp.strftime("%d/%b/%Y:%H:%M:%S +0530")
-
-
-def make_line(ip, timestamp, method, path, status, size, referrer, user_agent):
+def make_log_line(ip_address, timestamp, method, path, status, bytes_sent, user_agent, referrer="-"):
+    formatted_time = timestamp.strftime("%d/%b/%Y:%H:%M:%S +0530")
     return (
-        f'{ip} - - [{apache_time(timestamp)}] '
-        f'"{method} {path} HTTP/1.1" {status} {size} '
-        f'"{referrer}" "{user_agent}"\n'
+        f'{ip_address} - - [{formatted_time}] '
+        f'"{method} {path} HTTP/1.1" {status} {bytes_sent} '
+        f'"{referrer}" "{user_agent}"'
     )
 
 
-def make_normal_line(timestamp):
-    return make_line(
-        ip=random.choice(normal_ips),
-        timestamp=timestamp,
-        method=random.choice(["GET", "GET", "GET", "POST"]),
-        path=random.choice(normal_paths),
-        status=random.choice([200, 200, 200, 301, 302, 404]),
-        size=random.randint(250, 25000),
-        referrer=random.choice(referrers),
-        user_agent=random.choice(user_agents[:4])
+def normal_event(index, start_time):
+    timestamp = start_time + timedelta(seconds=index * random.randint(5, 18))
+    ip_address = random.choice(NORMAL_IPS)
+    method = random.choice(["GET", "GET", "GET", "POST"])
+    path = random.choice(NORMAL_PATHS)
+    status = random.choice([200, 200, 200, 200, 301, 404])
+    bytes_sent = random.randint(800, 28000)
+    user_agent = random.choice(USER_AGENTS)
+
+    return make_log_line(
+        ip_address,
+        timestamp,
+        method,
+        path,
+        status,
+        bytes_sent,
+        user_agent,
     )
 
 
-def make_sqli_line(timestamp):
-    return make_line(
-        ip=attack_ips["sqli"],
-        timestamp=timestamp,
-        method="GET",
-        path=random.choice(sqli_paths),
-        status=random.choice([400, 403, 500]),
-        size=random.randint(280, 900),
-        referrer="-",
-        user_agent=random.choice([
-            user_agents[5],
-            user_agents[2],
-            user_agents[4]
-        ])
-    )
+def attack_events(start_time):
+    events = []
+
+    sql_paths = [
+        "/products?id=1%20OR%201=1--",
+        "/search?q=test%27%20UNION%20SELECT%20username,password%20FROM%20users--",
+        "/api/products?category=1%27%20OR%20%271%27=%271",
+        "/login?user=admin%27--",
+        "/item?id=10%20AND%201=1",
+        "/checkout?coupon=%27%20OR%20%271%27=%271",
+    ]
+
+    xss_paths = [
+        "/search?q=%3Cscript%3Ealert(1)%3C/script%3E",
+        "/comment?text=%3Cimg%20src=x%20onerror=alert(1)%3E",
+        "/profile?name=%3Csvg%20onload=alert(1)%3E",
+        "/feedback?msg=javascript:alert(1)",
+        "/review?body=%3Ciframe%20src=javascript:alert(1)%3E",
+        "/support?message=%3Cbody%20onload=alert(1)%3E",
+    ]
+
+    traversal_paths = [
+        "/../../etc/passwd",
+        "/admin/../../../../etc/shadow",
+        "/download?file=../../../../etc/passwd",
+        "/static/..%2F..%2F..%2Fwindows%2Fwin.ini",
+        "/backup?name=..%2F..%2F..%2Fetc%2Fhosts",
+        "/files/%2e%2e/%2e%2e/%2e%2e/etc/passwd",
+    ]
+
+    current_time = start_time + timedelta(minutes=15)
+
+    for path in sql_paths:
+        events.append(
+            make_log_line(
+                "51.15.76.10",
+                current_time,
+                "GET",
+                path,
+                random.choice([200, 400, 403, 500]),
+                random.randint(1200, 9000),
+                "sqlmap/1.8.4#stable",
+            )
+        )
+        current_time += timedelta(seconds=random.randint(20, 55))
+
+    current_time = start_time + timedelta(minutes=32)
+
+    for path in xss_paths:
+        events.append(
+            make_log_line(
+                "45.33.32.156",
+                current_time,
+                "GET",
+                path,
+                random.choice([200, 400, 403]),
+                random.randint(900, 7000),
+                random.choice(ATTACK_USER_AGENTS),
+            )
+        )
+        current_time += timedelta(seconds=random.randint(18, 50))
+
+    current_time = start_time + timedelta(minutes=46)
+
+    for path in traversal_paths:
+        events.append(
+            make_log_line(
+                "185.220.101.1",
+                current_time,
+                "GET",
+                path,
+                random.choice([200, 403, 404]),
+                random.randint(500, 6000),
+                random.choice(ATTACK_USER_AGENTS),
+            )
+        )
+        current_time += timedelta(seconds=random.randint(22, 60))
+
+    current_time = start_time + timedelta(minutes=62)
+
+    for attempt in range(14):
+        events.append(
+            make_log_line(
+                "185.220.101.1",
+                current_time,
+                "POST",
+                "/login",
+                401,
+                random.randint(700, 2200),
+                "Mozilla/5.0 brute-force-bot",
+            )
+        )
+        current_time += timedelta(seconds=random.randint(3, 9))
+
+    return events
 
 
-def make_xss_line(timestamp):
-    return make_line(
-        ip=attack_ips["xss"],
-        timestamp=timestamp,
-        method="GET",
-        path=random.choice(xss_paths),
-        status=random.choice([200, 302, 403]),
-        size=random.randint(300, 1200),
-        referrer="-",
-        user_agent=random.choice(user_agents[:4])
-    )
+def build_log_file():
+    start_time = datetime(2026, 6, 19, 9, 0, 0)
+    attacks = attack_events(start_time)
+    normal_count = 600 - len(attacks)
 
-
-def make_traversal_line(timestamp):
-    return make_line(
-        ip=attack_ips["traversal"],
-        timestamp=timestamp,
-        method="GET",
-        path=random.choice(traversal_paths),
-        status=random.choice([400, 403, 404]),
-        size=random.randint(220, 700),
-        referrer="-",
-        user_agent=random.choice([
-            user_agents[2],
-            user_agents[4]
-        ])
-    )
-
-
-def make_brute_force_line(timestamp):
-    return make_line(
-        ip=attack_ips["bruteforce"],
-        timestamp=timestamp,
-        method="POST",
-        path="/login",
-        status=401,
-        size=random.randint(160, 240),
-        referrer="https://example.com/login",
-        user_agent="Mozilla/5.0 (X11; Linux x86_64) Firefox/115.0"
-    )
-
-
-def make_sample_log():
-    current_time = datetime(2026, 6, 19, 9, 0, 0)
     lines = []
 
-    first_brute_force_block = set(range(280, 287))
-    second_brute_force_block = set(range(440, 447))
+    for index in range(normal_count):
+        lines.append(normal_event(index, start_time))
 
-    for line_number in range(1, TOTAL_LINES + 1):
-        current_time += timedelta(seconds=random.randint(3, 25))
+    lines.extend(attacks)
 
-        if line_number in first_brute_force_block:
-            line = make_brute_force_line(current_time)
-        elif line_number in second_brute_force_block:
-            line = make_brute_force_line(current_time)
-        elif line_number % 67 == 0:
-            line = make_sqli_line(current_time)
-        elif line_number % 83 == 0:
-            line = make_xss_line(current_time)
-        elif line_number % 109 == 0:
-            line = make_traversal_line(current_time)
-        else:
-            line = make_normal_line(current_time)
-
-        lines.append(line)
+    lines.sort(key=lambda line: line.split("[")[1].split("]")[0])
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as file:
-        file.writelines(lines)
+        file.write("\n".join(lines) + "\n")
 
-    print("Created sample.log")
-    print("Path:", OUTPUT_FILE)
-    print("Lines:", len(lines))
+    print(f"Created sample.log with {len(lines)} lines")
+    print("Demo IP locations included:")
+    print("185.220.101.1 - Brandenburg an der Havel, Germany")
+    print("51.15.76.10 - Haarlem, The Netherlands")
+    print("45.33.32.156 - Fremont, United States")
+    print("103.48.198.141 - New Delhi, India")
+    print("45.79.118.42 - Sydney, Australia")
 
 
 if __name__ == "__main__":
-    make_sample_log()
+    build_log_file()
     
