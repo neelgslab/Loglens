@@ -1,0 +1,34 @@
+{
+  "SQL_INJECTION": {
+    "severity": "HIGH",
+    "patterns": [
+      "'\\s*OR\\s+1\\s*=\\s*1",
+      "OR\\s+1\\s*=\\s*1",
+      "AND\\s+1\\s*=\\s*1",
+      "UNION\\s+SELECT",
+      "SELECT\\s+.*\\s+FROM",
+      "information_schema",
+      "sleep\\s*\\("
+    ]
+  },
+  "XSS": {
+    "severity": "MEDIUM",
+    "patterns": [
+      "<script[^>]*>",
+      "javascript\\s*:",
+      "onerror\\s*=",
+      "document\\.cookie",
+      "alert\\s*\\("
+    ]
+  },
+  "DIRECTORY_TRAVERSAL": {
+    "severity": "HIGH",
+    "patterns": [
+      "\\.\\./\\.\\./",
+      "etc/passwd",
+      "/bin/sh",
+      "boot\\.ini",
+      "win\\.ini"
+    ]
+  }
+}
