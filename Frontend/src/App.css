@@ -783,6 +783,26 @@ tr:hover td {
   color: #166534;
 }
 
+.madeByFooter {
+  width: fit-content;
+  margin: 42px auto 10px;
+  background: #000000;
+  color: #ff7a00;
+  padding: 14px 24px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.25px;
+  text-align: center;
+  border: 1px solid #1f1f1f;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.35),
+    0 0 12px rgba(255, 122, 0, 0.22);
+  text-shadow:
+    0 0 4px rgba(255, 122, 0, 0.75),
+    0 0 8px rgba(255, 122, 0, 0.45);
+}
+
 @media (max-width: 1100px) {
   .uploadCard {
     grid-template-columns: 1fr;
@@ -854,5 +874,12 @@ tr:hover td {
 
   .eventFilterBtn {
     width: 100%;
+  }
+
+  .madeByFooter {
+    width: fit-content;
+    max-width: 100%;
+    font-size: 14px;
+    padding: 13px 16px;
   }
 }
