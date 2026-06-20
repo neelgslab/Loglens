@@ -361,6 +361,10 @@ function App() {
             </button>
           </div>
         </section>
+
+        <div className="madeByFooter">
+          Built by NeelG (indraneelghosh42@gmail.com)
+        </div>
       </div>
     );
   }
@@ -382,6 +386,10 @@ function App() {
             </button>
           </div>
         </section>
+
+        <div className="madeByFooter">
+          Built by NeelG (indraneelghosh42@gmail.com)
+        </div>
       </div>
     );
   }
@@ -419,6 +427,10 @@ function App() {
             </button>
           </div>
         </section>
+
+        <div className="madeByFooter">
+          Built by NeelG (indraneelghosh42@gmail.com)
+        </div>
       </div>
     );
   }
@@ -866,6 +878,10 @@ function App() {
           </div>
         </section>
       )}
+
+      <div className="madeByFooter">
+        Built by NeelG (indraneelghosh42@gmail.com)
+      </div>
     </div>
   );
 }
