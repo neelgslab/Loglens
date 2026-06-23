@@ -363,7 +363,7 @@ function App() {
         </section>
 
         <div className="madeByFooter">
-          Built by NeelG (indraneelghosh42@gmail.com)
+          Built by NeelG
         </div>
       </div>
     );
@@ -388,7 +388,7 @@ function App() {
         </section>
 
         <div className="madeByFooter">
-          Built by NeelG (indraneelghosh42@gmail.com)
+          Built by NeelG
         </div>
       </div>
     );
@@ -429,7 +429,7 @@ function App() {
         </section>
 
         <div className="madeByFooter">
-          Built by NeelG (indraneelghosh42@gmail.com)
+          Built by NeelG
         </div>
       </div>
     );
@@ -880,10 +880,11 @@ function App() {
       )}
 
       <div className="madeByFooter">
-        Built by NeelG (indraneelghosh42@gmail.com)
+        Built by NeelG
       </div>
     </div>
   );
 }
 
 export default App;
+
